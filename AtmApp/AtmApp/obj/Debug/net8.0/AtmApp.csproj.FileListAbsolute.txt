@@ -1,0 +1,14 @@
+C:\Users\sefa9\source\repos\AtmApp\AtmApp\bin\Debug\net8.0\AtmApp.exe
+C:\Users\sefa9\source\repos\AtmApp\AtmApp\bin\Debug\net8.0\AtmApp.deps.json
+C:\Users\sefa9\source\repos\AtmApp\AtmApp\bin\Debug\net8.0\AtmApp.runtimeconfig.json
+C:\Users\sefa9\source\repos\AtmApp\AtmApp\bin\Debug\net8.0\AtmApp.dll
+C:\Users\sefa9\source\repos\AtmApp\AtmApp\bin\Debug\net8.0\AtmApp.pdb
+C:\Users\sefa9\source\repos\AtmApp\AtmApp\obj\Debug\net8.0\AtmApp.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\sefa9\source\repos\AtmApp\AtmApp\obj\Debug\net8.0\AtmApp.AssemblyInfoInputs.cache
+C:\Users\sefa9\source\repos\AtmApp\AtmApp\obj\Debug\net8.0\AtmApp.AssemblyInfo.cs
+C:\Users\sefa9\source\repos\AtmApp\AtmApp\obj\Debug\net8.0\AtmApp.csproj.CoreCompileInputs.cache
+C:\Users\sefa9\source\repos\AtmApp\AtmApp\obj\Debug\net8.0\AtmApp.dll
+C:\Users\sefa9\source\repos\AtmApp\AtmApp\obj\Debug\net8.0\refint\AtmApp.dll
+C:\Users\sefa9\source\repos\AtmApp\AtmApp\obj\Debug\net8.0\AtmApp.pdb
+C:\Users\sefa9\source\repos\AtmApp\AtmApp\obj\Debug\net8.0\AtmApp.genruntimeconfig.cache
+C:\Users\sefa9\source\repos\AtmApp\AtmApp\obj\Debug\net8.0\ref\AtmApp.dll
