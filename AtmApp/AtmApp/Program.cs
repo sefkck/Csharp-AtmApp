@@ -1,137 +1,136 @@
-﻿using System.IO;
-using System.Threading.Channels;
-class BankaHesap {
-    public int Kartno;
-    int sifre ;
-    int bakiye;
-    string kullanıcıAdı;
-    static void Main(string[] args)
-    {
-       
-        int girkartno, girsifre, yanlıssayı = 0, secim, yatpara, cekpara;
+﻿using System;
+using System.IO;
+using System.Linq;
+using System.Reflection.Metadata;
 
-        BankaHesap SefaKart = new BankaHesap();
-        SefaKart.Kartno = 15061406;
-        SefaKart.sifre = 1406;
-        SefaKart.bakiye = 0;
-        SefaKart.kullanıcıAdı = "Sefa Koçak";
+string KartNo = "", KartAdi = "", KartSifre="";
+string dosya = "Kullanıcı.txt";
+string bakiye = "Bakiye.txt";
 
-        BankaHesap NilKart = new BankaHesap();
-        NilKart.Kartno = 12345678;
-        NilKart.sifre = 1234;
-        NilKart.bakiye = 7500;
-        NilKart.kullanıcıAdı = "nil";
+Console.WriteLine("1-Kayıt Ol, 2-Giriş Yap");
+int secim =Convert.ToInt32(Console.ReadLine());
 
-        BankaHesap ZeyKart = new BankaHesap();
-        ZeyKart.Kartno = 10121972;
-        ZeyKart.sifre = 4321;
-        ZeyKart.bakiye = 1200;
-        ZeyKart.kullanıcıAdı = "zey";
-
-        
+switch (secim)
+{
+    case 1:
         Console.Write("Kart No Giriniz: ");
-            girkartno = Convert.ToInt32(Console.ReadLine());
-            Console.Write("Şifrenizi Giriniz: ");
-            girsifre = Convert.ToInt32(Console.ReadLine());
-            while (true)
-            {
+        KartNo = Console.ReadLine();
+        Console.Write("Kart Adı Giriniz: ");
+        KartAdi = Console.ReadLine();
+        Console.Write("Kart Sifresi Giriniz: ");
+        KartSifre = Console.ReadLine();
 
-        if (girkartno == NilKart.Kartno && girsifre == NilKart.sifre)
+        string yenisatir = $"{KartNo};{KartAdi};{KartSifre}"+Environment.NewLine;
+        File.AppendAllText(dosya, yenisatir);
+        break;
+
+    case 2:
+        Console.Write("Kart No Giriniz: ");
+        string girilenkartno= Console.ReadLine();
+        if (File.Exists(dosya))
         {
-            Console.WriteLine("Hoşgeldiniz: " + NilKart.kullanıcıAdı);
-            Console.WriteLine("Ne İşlem Yapmak İstiyorsunuz? (1 - Para Ekleme 2 - Para Çekme 3 - Bakiye Görüntüleme 4 - Çıkış) ");
-            secim = Convert.ToInt32(Console.ReadLine());
-            if (secim == 1)
+            string[] satirlar = File.ReadAllLines(dosya);
+            bool kartbulundu = false;
+            foreach(string satir in satirlar)
             {
-                Console.Write("Ne kadar Yatırmak istiyorsunuz? ");
-                yatpara = Convert.ToInt32(Console.ReadLine());
-                NilKart.bakiye = NilKart.bakiye + yatpara;
-            }
-            else if (secim == 2)
-            {
-                Console.Write("Ne kadar Çekmek istiyorsunuz? ");
-                cekpara = Convert.ToInt32(Console.ReadLine());
-                if (cekpara <= NilKart.bakiye)
+                if (string.IsNullOrWhiteSpace(satir)) continue;
+                string[] parcalar=satir.Split(';');
+                if (parcalar[0] ==girilenkartno)
                 {
-                    NilKart.bakiye = NilKart.bakiye - cekpara;
-                    Console.WriteLine("Kalan Bakiye: " + NilKart.bakiye);
-                }
-                else { Console.WriteLine("Bakiye Yetersiz!"); }
-            }
+                    kartbulundu=true;
+                    Console.Write("Şifrenizi Giriniz: ");
+                    string girilensifre=Console.ReadLine();
 
-            else if (secim == 3) { Console.WriteLine("Bakiyeniz: " + NilKart.bakiye); }
-                else if (secim == 4) { break; }
-                else { Console.WriteLine("Yanlış Seçim Yaptınız!"); }
-        }
-
-
-        else if (girkartno == SefaKart.Kartno && girsifre == SefaKart.sifre)
-        {
-            Console.WriteLine("Hoşgeldiniz: " + SefaKart.kullanıcıAdı);
-            Console.WriteLine("Ne İşlem Yapmak İstiyorsunuz? (1 - Para Ekleme 2 - Para Çekme 3 - Bakiye Görüntüleme 4 - Çıkış) ");
-            secim = Convert.ToInt32(Console.ReadLine());
-            if (secim == 1)
-            {
-                Console.Write("Ne kadar Yatırmak istiyorsunuz? ");
-                yatpara = Convert.ToInt32(Console.ReadLine());
-                SefaKart.bakiye = SefaKart.bakiye + yatpara;
-            }
-            else if (secim == 2)
-            {
-                Console.Write("Ne kadar Çekmek istiyorsunuz? ");
-                cekpara = Convert.ToInt32(Console.ReadLine());
-                if (cekpara <= SefaKart.bakiye)
-                {
-                    SefaKart.bakiye = SefaKart.bakiye - cekpara;
-                    Console.WriteLine("Kalan Bakiye: " + SefaKart.bakiye);
-                }
-                else { Console.WriteLine("Bakiye Yetersiz!"); }
-            }
-
-            else if (secim == 3) { Console.WriteLine("Bakiyeniz: " + SefaKart.bakiye); }
-            else if (secim == 4) { break; }
-            else { Console.WriteLine("Yanlış Seçim Yaptınız!"); }
-        }
-
-            else if (girkartno == ZeyKart.Kartno && girsifre == ZeyKart.sifre)
-            {
-                Console.WriteLine("Hoşgeldiniz: " + ZeyKart.kullanıcıAdı);
-                Console.WriteLine("Ne İşlem Yapmak İstiyorsunuz? (1 - Para Ekleme 2 - Para Çekme 3 - Bakiye Görüntüleme 4 - Çıkış) ");
-                secim = Convert.ToInt32(Console.ReadLine());
-                if (secim == 1)
-                {
-                    Console.Write("Ne kadar Yatırmak istiyorsunuz? ");
-                    yatpara = Convert.ToInt32(Console.ReadLine());
-                    ZeyKart.bakiye = ZeyKart.bakiye + yatpara;
-                }
-                else if (secim == 2)
-                {
-                    Console.Write("Ne kadar Çekmek istiyorsunuz? ");
-                    cekpara = Convert.ToInt32(Console.ReadLine());
-                    if (cekpara <= ZeyKart.bakiye)
+                    if (parcalar[2] == girilensifre)
                     {
-                        ZeyKart.bakiye = ZeyKart.bakiye - cekpara;
-                        Console.WriteLine("Kalan Bakiye: " + ZeyKart.bakiye);
-                    }
-                    else { Console.WriteLine("Bakiye Yetersiz!"); }
-                }
+                        KartNo = parcalar[0];
+                        KartAdi = parcalar[1];
+                        Console.WriteLine("Hoşgeldiniz: " + KartAdi);
+                        Console.WriteLine("Yapmak istediğiniz işlem nedir?");
+                        Console.Write("1-Para Yatırma, 2-Para Çekme, 3-Bakiye Görüntüleme");
+                        int islem =Convert.ToInt32(Console.ReadLine());
+                        if(islem == 1)
+                        {
+                            Console.WriteLine("Yatırmak İstediğiniz Tutarı Giriniz: ");
+                            string tutar=Console.ReadLine();
+                            string bakiyesatir = $"{KartNo};{tutar}"+ Environment.NewLine;
+                            File.AppendAllText(bakiye, bakiyesatir);
 
-                else if (secim == 3) { Console.WriteLine("Bakiyeniz: " + ZeyKart.bakiye); }
-                else if (secim == 4) { break; }
-                else { Console.WriteLine("Yanlış Seçim Yaptınız!"); }
+                        }
+
+                        else if (islem == 2)
+                        {
+                            Console.Write("Çekmek İstediğiniz Tutarı Giriniz: ");
+                            string cektutarInput = Console.ReadLine();
+                            int cektutar = Convert.ToInt32(cektutarInput);
+
+                            if (File.Exists(bakiye))
+                            {
+                                string[] bakiyeSatirlari = File.ReadAllLines(bakiye);
+                                bool bulundumu = false;
+
+                                for (int i = 0; i < bakiyeSatirlari.Length; i++)
+                                {
+                                    // Satırı parçalara ayırıyoruz (Örn: "123;500")
+                                    string[] parcalarr = bakiyeSatirlari[i].Split(';');
+
+                                    if (parcalarr.Length >= 2 && parcalarr[0] == KartNo)
+                                    {
+                                        int mevcutBakiye = Convert.ToInt32(parcalarr[1]);
+
+                                        if (mevcutBakiye >= cektutar)
+                                        {
+                                            int kalanBakiye = mevcutBakiye - cektutar;
+
+                                            // SADECE bu satırı güncelliyoruz: "KartNo;YeniBakiye"
+                                            bakiyeSatirlari[i] = KartNo + ";" + kalanBakiye.ToString();
+                                            bulundumu = true;
+                                            Console.WriteLine($"İşlem başarılı. Kalan bakiye: {kalanBakiye}");
+                                        }
+                                        else
+                                        {
+                                            Console.WriteLine("Yetersiz bakiye!");
+                                            bulundumu = true; // Kart bulundu ama para yetersiz
+                                        }
+                                        break; // Kartı bulduğumuz için döngüden çıkabiliriz
+                                    }
+                                }
+
+                                if (bulundumu)
+                                {
+                                    // Tüm satırları (güncellenmiş haliyle) dosyaya geri yazıyoruz
+                                    File.WriteAllLines(bakiye, bakiyeSatirlari);
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Hata: Bakiye kaydı bulunamadı.");
+                                }
+                            }
+                        }
+                        else if(islem == 3)
+                        {
+                            Console.WriteLine("Bakiyeniz: ");
+                        }
+
+                        
+                    }   
+                    else { Console.WriteLine("Yanlış Şifre."); }
+                    break;
+                }
+            }
+            if (!kartbulundu) {
+                Console.WriteLine("Hata: Bu kart numarasına ait bir kayıt bulunamadı.");
             }
 
-
-
-            else if (yanlıssayı <= 3)
+        }
+        else
         {
-             Console.WriteLine("Şİfre Yanlış!!");
-             yanlıssayı++;   
+            Console.WriteLine("Hata: Henüz hiç kayıtlı kullanıcı yok.");
         }
-        else { Console.WriteLine("Çok Sayıda Yanlış Şifre Girdiniz Kartınız Bloke Edildi!"); }
-
+        break;
+    default:
+        {
+            Console.WriteLine("Hata: Henüz hiç kayıtlı kullanıcı yok.");
         }
-
-    }
-
+        break;
 }
