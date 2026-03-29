@@ -1,136 +1,181 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Reflection.Metadata;
+﻿using Microsoft.Data.SqlClient;
+using System;
 
-string KartNo = "", KartAdi = "", KartSifre="";
-string dosya = "Kullanıcı.txt";
-string bakiye = "Bakiye.txt";
-
-Console.WriteLine("1-Kayıt Ol, 2-Giriş Yap");
-int secim =Convert.ToInt32(Console.ReadLine());
-
-switch (secim)
+// 1. ADIM: Enum Tanımlaması
+enum Choices
 {
-    case 1:
-        Console.Write("Kart No Giriniz: ");
-        KartNo = Console.ReadLine();
-        Console.Write("Kart Adı Giriniz: ");
-        KartAdi = Console.ReadLine();
-        Console.Write("Kart Sifresi Giriniz: ");
-        KartSifre = Console.ReadLine();
+    ch_noChoices = 0,
+    ch_Login = 1,
+    ch_Register = 2,
+    ch_list = 3,
+    ch_admin = 4,
+    ch_numOfChoices = 5
+};
 
-        string yenisatir = $"{KartNo};{KartAdi};{KartSifre}"+Environment.NewLine;
-        File.AppendAllText(dosya, yenisatir);
-        break;
+class Program
+{
+    static void Main(string[] args)
+    {
+        // Veritabanı Bağlantı Cümlesi
+        string connectionString = "Server=.\\sqlexpress; Database=BankaSistemi; Trusted_Connection=True; TrustServerCertificate=True;";
 
-    case 2:
-        Console.Write("Kart No Giriniz: ");
-        string girilenkartno= Console.ReadLine();
-        if (File.Exists(dosya))
+        while (true)
         {
-            string[] satirlar = File.ReadAllLines(dosya);
-            bool kartbulundu = false;
-            foreach(string satir in satirlar)
+            Console.Clear();
+            Console.WriteLine("=== ATM SİSTEMİNE HOŞGELDİNİZ ===");
+            Console.WriteLine($"{(int)Choices.ch_Login}- Giriş Yap");
+            Console.WriteLine($"{(int)Choices.ch_Register}- Kayıt Ol");
+            Console.WriteLine($"{(int)Choices.ch_list}- Kullanıcıları Listele");
+            Console.WriteLine($"{(int)Choices.ch_admin}- Admin Paneli");
+            Console.WriteLine("0- Çıkış");
+            Console.Write("\nSeçiminiz: ");
+
+            Choices secim = (Choices)Convert.ToInt32(Console.ReadLine());
+            if (secim == 0) break;
+
+            using (SqlConnection con = new SqlConnection(connectionString))
             {
-                if (string.IsNullOrWhiteSpace(satir)) continue;
-                string[] parcalar=satir.Split(';');
-                if (parcalar[0] ==girilenkartno)
+                con.Open();
+
+                switch (secim)
                 {
-                    kartbulundu=true;
-                    Console.Write("Şifrenizi Giriniz: ");
-                    string girilensifre=Console.ReadLine();
+                    case Choices.ch_Login:
+                        Console.Write("Kart Numarası: ");
+                        string girilenKart = Console.ReadLine();
+                        Console.Write("Şifre: ");
+                        int girilenSifre = Convert.ToInt32(Console.ReadLine());
 
-                    if (parcalar[2] == girilensifre)
-                    {
-                        KartNo = parcalar[0];
-                        KartAdi = parcalar[1];
-                        Console.WriteLine("Hoşgeldiniz: " + KartAdi);
-                        Console.WriteLine("Yapmak istediğiniz işlem nedir?");
-                        Console.Write("1-Para Yatırma, 2-Para Çekme, 3-Bakiye Görüntüleme");
-                        int islem =Convert.ToInt32(Console.ReadLine());
-                        if(islem == 1)
+                        string loginSorgu = "SELECT KullanıcıId, Ad FROM Kullanıcılar WHERE KartNo = @KartNo AND Sifre = @Sifre";
+
+                        using (SqlCommand cmd = new SqlCommand(loginSorgu, con))
                         {
-                            Console.WriteLine("Yatırmak İstediğiniz Tutarı Giriniz: ");
-                            string tutar=Console.ReadLine();
-                            string bakiyesatir = $"{KartNo};{tutar}"+ Environment.NewLine;
-                            File.AppendAllText(bakiye, bakiyesatir);
+                            cmd.Parameters.AddWithValue("@KartNo", girilenKart);
+                            cmd.Parameters.AddWithValue("@Sifre", girilenSifre);
 
-                        }
-
-                        else if (islem == 2)
-                        {
-                            Console.Write("Çekmek İstediğiniz Tutarı Giriniz: ");
-                            string cektutarInput = Console.ReadLine();
-                            int cektutar = Convert.ToInt32(cektutarInput);
-
-                            if (File.Exists(bakiye))
+                            using (SqlDataReader reader = cmd.ExecuteReader())
                             {
-                                string[] bakiyeSatirlari = File.ReadAllLines(bakiye);
-                                bool bulundumu = false;
-
-                                for (int i = 0; i < bakiyeSatirlari.Length; i++)
+                                if (reader.Read())
                                 {
-                                    // Satırı parçalara ayırıyoruz (Örn: "123;500")
-                                    string[] parcalarr = bakiyeSatirlari[i].Split(';');
+                                    int aktifId = Convert.ToInt32(reader["KullanıcıId"]);
+                                    string ad = reader["Ad"].ToString();
+                                    Console.WriteLine($"\nGiriş Başarılı! Hoşgeldin {ad}.");
+                                    reader.Close(); // İşlem yapabilmek için reader'ı kapatıyoruz.
 
-                                    if (parcalarr.Length >= 2 && parcalarr[0] == KartNo)
+                                    Console.WriteLine("1- Para Yatır\n2- Para Çek\n3- Bakiye Görüntüle");
+                                    int islem = Convert.ToInt32(Console.ReadLine());
+
+                                    if (islem == 1) // Para Yatır (UPSERT)
                                     {
-                                        int mevcutBakiye = Convert.ToInt32(parcalarr[1]);
-
-                                        if (mevcutBakiye >= cektutar)
+                                        Console.Write("Yatırılacak Tutar: ");
+                                        int miktar = Convert.ToInt32(Console.ReadLine());
+                                        string upsertSorgu = @"
+                                            IF EXISTS (SELECT 1 FROM Hesap WHERE KullanıcıId = @Id)
+                                                UPDATE Hesap SET Bakiye = Bakiye + @Miktar WHERE KullanıcıId = @Id
+                                            ELSE
+                                                INSERT INTO Hesap (KullanıcıId, Bakiye) VALUES (@Id, @Miktar)";
+                                        using (SqlCommand upCmd = new SqlCommand(upsertSorgu, con))
                                         {
-                                            int kalanBakiye = mevcutBakiye - cektutar;
+                                            upCmd.Parameters.AddWithValue("@Id", aktifId);
+                                            upCmd.Parameters.AddWithValue("@Miktar", miktar);
+                                            upCmd.ExecuteNonQuery();
+                                            Console.WriteLine("Bakiye güncellendi.");
+                                        }
+                                    }
+                                    else if (islem == 2) // Para Çek (Bakiye Kontrollü UPDATE)
+                                    {
+                                        Console.Write("Çekilecek Tutar: ");
+                                        int cekilecek = Convert.ToInt32(Console.ReadLine());
 
-                                            // SADECE bu satırı güncelliyoruz: "KartNo;YeniBakiye"
-                                            bakiyeSatirlari[i] = KartNo + ";" + kalanBakiye.ToString();
-                                            bulundumu = true;
-                                            Console.WriteLine($"İşlem başarılı. Kalan bakiye: {kalanBakiye}");
-                                        }
-                                        else
+                                        // Önce bakiye kontrolü
+                                        string bKontrol = "SELECT ISNULL(Bakiye, 0) FROM Hesap WHERE KullanıcıId = @Id";
+                                        using (SqlCommand bCmd = new SqlCommand(bKontrol, con))
                                         {
-                                            Console.WriteLine("Yetersiz bakiye!");
-                                            bulundumu = true; // Kart bulundu ama para yetersiz
+                                            bCmd.Parameters.AddWithValue("@Id", aktifId);
+                                            decimal suAnkiBakiye = Convert.ToDecimal(bCmd.ExecuteScalar() ?? 0);
+
+                                            if (suAnkiBakiye >= cekilecek)
+                                            {
+                                                string cekSorgu = "UPDATE Hesap SET Bakiye = Bakiye - @Miktar WHERE KullanıcıId = @Id";
+                                                using (SqlCommand cekCmd = new SqlCommand(cekSorgu, con))
+                                                {
+                                                    cekCmd.Parameters.AddWithValue("@Miktar", cekilecek);
+                                                    cekCmd.Parameters.AddWithValue("@Id", aktifId);
+                                                    cekCmd.ExecuteNonQuery();
+                                                    Console.WriteLine($"İşlem başarılı. Kalan: {suAnkiBakiye - cekilecek} TL");
+                                                }
+                                            }
+                                            else { Console.WriteLine("Yetersiz bakiye!"); }
                                         }
-                                        break; // Kartı bulduğumuz için döngüden çıkabiliriz
+                                    }
+                                    else if (islem == 3) // Bakiye Görüntüle
+                                    {
+                                        string bakiyeSorgu = "SELECT Bakiye FROM Hesap WHERE KullanıcıId = @Id";
+                                        using (SqlCommand bCmd = new SqlCommand(bakiyeSorgu, con))
+                                        {
+                                            bCmd.Parameters.AddWithValue("@Id", aktifId);
+                                            object bakiyeVal = bCmd.ExecuteScalar();
+                                            Console.WriteLine($"Mevcut Bakiyeniz: {bakiyeVal ?? 0} TL");
+                                        }
                                     }
                                 }
-
-                                if (bulundumu)
-                                {
-                                    // Tüm satırları (güncellenmiş haliyle) dosyaya geri yazıyoruz
-                                    File.WriteAllLines(bakiye, bakiyeSatirlari);
-                                }
-                                else
-                                {
-                                    Console.WriteLine("Hata: Bakiye kaydı bulunamadı.");
-                                }
+                                else { Console.WriteLine("Hatalı bilgiler!"); }
                             }
                         }
-                        else if(islem == 3)
-                        {
-                            Console.WriteLine("Bakiyeniz: ");
-                        }
+                        break;
 
-                        
-                    }   
-                    else { Console.WriteLine("Yanlış Şifre."); }
-                    break;
+                    case Choices.ch_admin:
+                        Console.Write("Admin Pin: ");
+                        string pin = Console.ReadLine();
+                        string adminSorgu = "SELECT 1 FROM AdminKullanıcı WHERE AdminPin = @Pin";
+                        using (SqlCommand aCmd = new SqlCommand(adminSorgu, con))
+                        {
+                            aCmd.Parameters.AddWithValue("@Pin", pin);
+                            if (aCmd.ExecuteScalar() != null)
+                            {
+                                Console.WriteLine("1- Kullanıcı Sil\n2- Listele");
+                                int aSecim = Convert.ToInt32(Console.ReadLine());
+                                if (aSecim == 1)
+                                {
+                                    Console.Write("Silinecek Kart No: ");
+                                    string silinecekKart = Console.ReadLine();
+
+                                    // FK HATASINI ÇÖZEN KISIM: İki aşamalı silme
+                                    string idBul = "SELECT KullanıcıId FROM Kullanıcılar WHERE KartNo = @k";
+                                    using (SqlCommand idCmd = new SqlCommand(idBul, con))
+                                    {
+                                        idCmd.Parameters.AddWithValue("@k", silinecekKart);
+                                        object targetId = idCmd.ExecuteScalar();
+
+                                        if (targetId != null)
+                                        {
+                                            int sid = (int)targetId;
+                                            // 1. Önce bağlı olduğu Hesap tablosundaki veriyi siliyoruz
+                                            string silHesap = "DELETE FROM Hesap WHERE KullanıcıId = @sid";
+                                            using (SqlCommand hCmd = new SqlCommand(silHesap, con))
+                                            {
+                                                hCmd.Parameters.AddWithValue("@sid", sid);
+                                                hCmd.ExecuteNonQuery();
+                                            }
+                                            // 2. Şimdi ana kullanıcı kaydını silebiliriz
+                                            string silKullanici = "DELETE FROM Kullanıcılar WHERE KullanıcıId = @sid";
+                                            using (SqlCommand kCmd = new SqlCommand(silKullanici, con))
+                                            {
+                                                kCmd.Parameters.AddWithValue("@sid", sid);
+                                                kCmd.ExecuteNonQuery();
+                                            }
+                                            Console.WriteLine("Kullanıcı ve bağlı tüm veriler silindi.");
+                                        }
+                                        else { Console.WriteLine("Kullanıcı bulunamadı."); }
+                                    }
+                                }
+                            }
+                            else { Console.WriteLine("Yetkisiz erişim!"); }
+                        }
+                        break;
                 }
             }
-            if (!kartbulundu) {
-                Console.WriteLine("Hata: Bu kart numarasına ait bir kayıt bulunamadı.");
-            }
-
+            Console.WriteLine("\nDevam etmek için bir tuşa basın...");
+            Console.ReadKey();
         }
-        else
-        {
-            Console.WriteLine("Hata: Henüz hiç kayıtlı kullanıcı yok.");
-        }
-        break;
-    default:
-        {
-            Console.WriteLine("Hata: Henüz hiç kayıtlı kullanıcı yok.");
-        }
-        break;
+    }
 }
